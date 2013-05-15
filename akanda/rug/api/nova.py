@@ -19,14 +19,14 @@ class Nova(object):
                 for p in ports]
 
         server = self.client.servers.create(
-            'ak-' + router.id,
+            router.name,
             image=self.conf.router_image_uuid,
             flavor=self.conf.router_instance_flavor,
             nics=nics)
 
     def get_instance(self, router):
         instances = self.client.servers.list(
-            search_opts=dict(name='ak-' + router.id))
+            search_opts=dict(name=router.name))
 
         if instances:
             return instances[0]
