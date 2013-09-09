@@ -49,10 +49,20 @@ def main(argv=sys.argv[1:]):
         cfg.StrOpt('auth_strategy', default='keystone'),
         cfg.StrOpt('auth_region'),
 
+        cfg.StrOpt('management_network_id'),
+        cfg.StrOpt('external_network_id'),
+        cfg.StrOpt('management_subnet_id'),
+        cfg.StrOpt('router_image_uuid'),
+
+        cfg.StrOpt('management_prefix', default='fdca:3ba5:a17a:acda::/64'),
+        cfg.IntOpt('akanda_mgt_service_port', default=5000),
+        cfg.IntOpt('router_instance_flavor', default=1),
+
         # needed for plugging locally into management network
         cfg.StrOpt('interface_driver'),
         cfg.StrOpt('ovs_integration_bridge', default='br-int'),
         cfg.BoolOpt('ovs_use_veth', default=False),
+        cfg.IntOpt('network_device_mtu'),
     ])
 
     AGENT_OPTIONS = [
