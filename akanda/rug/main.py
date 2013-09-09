@@ -63,6 +63,7 @@ def main(argv=sys.argv[1:]):
         cfg.StrOpt('ovs_integration_bridge', default='br-int'),
         cfg.BoolOpt('ovs_use_veth', default=False),
         cfg.IntOpt('network_device_mtu'),
+
     ])
 
     AGENT_OPTIONS = [
