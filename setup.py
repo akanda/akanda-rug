@@ -13,7 +13,7 @@ setup(
         'httplib2>=0.7.2',
         'python-quantumclient>=2.1',
         'oslo.config',
-        'kombu==1.0.4'
+        'kombu>=2.4.8'
     ],
     namespace_packages=['akanda'],
     packages=find_packages(exclude=['test']),
