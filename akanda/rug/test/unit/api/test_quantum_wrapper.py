@@ -2,12 +2,12 @@ import mock
 import netaddr
 import unittest2 as unittest
 
-from akanda.rug.api import quantum
+from akanda.rug.api import neutron
 
 
-class TestQuantumModels(unittest.TestCase):
+class TestNeutronModels(unittest.TestCase):
     def test_router(self):
-        r = quantum.Router(
+        r = neutron.Router(
             '1', 'tenant_id', 'name', True, 'ext', ['int'], 'mgt')
         self.assertEqual(r.id, '1')
         self.assertEqual(r.tenant_id, 'tenant_id')
@@ -42,7 +42,7 @@ class TestQuantumModels(unittest.TestCase):
             'floatingips': [fip]
         }
 
-        r = quantum.Router.from_dict(d)
+        r = neutron.Router.from_dict(d)
 
         self.assertEqual(r.id, '1')
         self.assertEqual(r.tenant_id, 'tenant_id')
@@ -51,17 +51,17 @@ class TestQuantumModels(unittest.TestCase):
         self.assertTrue(r.floating_ips)  # just make sure this exists
 
     def test_router_eq(self):
-        r1 = quantum.Router(
+        r1 = neutron.Router(
             '1', 'tenant_id', 'name', True, 'ext', ['int'], 'mgt')
-        r2 = quantum.Router(
+        r2 = neutron.Router(
             '1', 'tenant_id', 'name', True, 'ext', ['int'], 'mgt')
 
         self.assertEqual(r1, r2)
 
     def test_router_ne(self):
-        r1 = quantum.Router(
+        r1 = neutron.Router(
             '1', 'tenant_id', 'name', True, 'ext', ['int'], 'mgt')
-        r2 = quantum.Router(
+        r2 = neutron.Router(
             '2', 'tenant_id', 'name', True, 'ext', ['int'], 'mgt')
 
         self.assertNotEqual(r1, r2)
@@ -80,7 +80,7 @@ class TestQuantumModels(unittest.TestCase):
             'host_routes': []
         }
 
-        s = quantum.Subnet.from_dict(d)
+        s = neutron.Subnet.from_dict(d)
 
         self.assertEqual(s.id, '1')
         self.assertEqual(s.tenant_id, 'tenant_id')
@@ -103,7 +103,7 @@ class TestQuantumModels(unittest.TestCase):
             'device_owner': 'test'
         }
 
-        p = quantum.Port.from_dict(d)
+        p = neutron.Port.from_dict(d)
 
         self.assertEqual(p.id, '1')
         self.assertEqual(p.device_id, 'device_id')
@@ -117,7 +117,7 @@ class TestQuantumModels(unittest.TestCase):
             'ip_address': '192.168.1.1'
         }
 
-        fip = quantum.FixedIp.from_dict(d)
+        fip = neutron.FixedIp.from_dict(d)
 
         self.assertEqual(fip.subnet_id, 'sub1')
         self.assertEqual(fip.ip_address, netaddr.IPAddress('192.168.1.1'))
@@ -129,7 +129,7 @@ class TestQuantumModels(unittest.TestCase):
             'entries': [{'cidr': '192.168.1.1/24'}]
         }
 
-        g = quantum.AddressGroup.from_dict(d)
+        g = neutron.AddressGroup.from_dict(d)
 
         self.assertEqual(g.id, '1')
         self.assertEqual(g.name, 'group1')
@@ -148,7 +148,7 @@ class TestQuantumModels(unittest.TestCase):
             'destination_port': 80
         }
 
-        r = quantum.FilterRule.from_dict(d)
+        r = neutron.FilterRule.from_dict(d)
 
         self.assertEqual(r.id, '1')
         self.assertEqual(r.action, 'pass')
@@ -177,7 +177,7 @@ class TestQuantumModels(unittest.TestCase):
             'port': p
         }
 
-        fw = quantum.PortForward.from_dict(d)
+        fw = neutron.PortForward.from_dict(d)
 
         self.assertEqual(fw.id, '1')
         self.assertEqual(fw.name, 'name')
@@ -193,7 +193,7 @@ class TestQuantumModels(unittest.TestCase):
             'fixed_ip_address': '192.168.1.1'
         }
 
-        fip = quantum.FloatingIP.from_dict(d)
+        fip = neutron.FloatingIP.from_dict(d)
 
         self.assertEqual(fip.id, 'a-b-c-d')
         self.assertEqual(fip.floating_ip, netaddr.IPAddress('9.9.9.9'))
@@ -209,17 +209,17 @@ class FakeConf:
     auth_region = 'RegionOne'
 
 
-class TestQuantumWrapper(unittest.TestCase):
+class TestNeutronWrapper(unittest.TestCase):
 
-    @mock.patch('akanda.rug.api.quantum.cfg')
-    @mock.patch('akanda.rug.api.quantum.AkandaExtClientWrapper')
-    @mock.patch('akanda.rug.api.quantum.importutils')
+    @mock.patch('akanda.rug.api.neutron.cfg')
+    @mock.patch('akanda.rug.api.neutron.AkandaExtClientWrapper')
+    @mock.patch('akanda.rug.api.neutron.importutils')
     def test_purge_management_interface(self, import_utils, ak_wrapper, cfg):
         conf = mock.Mock()
         driver = mock.Mock()
         import_utils.import_object.return_value = driver
 
-        quantum_wrapper = quantum.Quantum(conf)
-        quantum_wrapper.purge_management_interface()
+        neutron_wrapper = neutron.Neutron(conf)
+        neutron_wrapper.purge_management_interface()
         driver.get_device_name.assert_called_once()
         driver.unplug.assert_called_once()

@@ -3,7 +3,7 @@
 
 import logging
 
-from akanda.rug.api import quantum
+from akanda.rug.api import neutron
 from akanda.rug import state
 from akanda.rug.openstack.common import timeutils
 
@@ -20,7 +20,7 @@ class TenantRouterManager(object):
         self.tenant_id = tenant_id
         self.notify = notify_callback
         self.state_machines = {}
-        self.quantum = quantum.Quantum(cfg.CONF)
+        self.neutron = neutron.Neutron(cfg.CONF)
         self._default_router_id = None
 
     def _delete_router(self, router_id):
@@ -60,7 +60,7 @@ class TenantRouterManager(object):
         if not router_id:
             if self._default_router_id is None:
                 LOG.debug('looking up router for tenant %s', message.tenant_id)
-                router = self.quantum.get_router_for_tenant(message.tenant_id)
+                router = self.neutron.get_router_for_tenant(message.tenant_id)
                 self._default_router_id = router.id
             router_id = self._default_router_id
 

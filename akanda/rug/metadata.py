@@ -41,7 +41,7 @@ metadata_opts = [
     cfg.IntOpt('nova_metadata_port',
                default=8775,
                help="TCP Port used by Nova metadata server."),
-    cfg.StrOpt('quantum_metadata_proxy_shared_secret',
+    cfg.StrOpt('neutron_metadata_proxy_shared_secret',
                default='',
                help='Shared secret to sign instance-id request')
 ]
@@ -110,7 +110,7 @@ class MetadataProxyHandler(object):
             raise Exception('Unexpected response code: %s' % resp.status)
 
     def _sign_instance_id(self, instance_id):
-        return hmac.new(cfg.CONF.quantum_metadata_proxy_shared_secret,
+        return hmac.new(cfg.CONF.neutron_metadata_proxy_shared_secret,
                         instance_id,
                         hashlib.sha256).hexdigest()
 

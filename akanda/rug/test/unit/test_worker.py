@@ -9,8 +9,8 @@ from akanda.rug import worker
 
 class TestWorkerCreatingRouter(unittest.TestCase):
 
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def setUp(self, quantum):
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def setUp(self, neutron):
         super(TestWorkerCreatingRouter, self).setUp()
         self.w = worker.Worker(0, mock.Mock())
         self.tenant_id = '1234'
@@ -43,8 +43,8 @@ class TestWorkerCreatingRouter(unittest.TestCase):
 
 class TestWorkerWildcardMessages(unittest.TestCase):
 
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def setUp(self, quantum):
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def setUp(self, neutron):
         super(TestWorkerWildcardMessages, self).setUp()
         self.w = worker.Worker(0, mock.Mock())
         # Create some tenants
@@ -75,15 +75,15 @@ class TestWorkerWildcardMessages(unittest.TestCase):
 
 class TestWorkerShutdown(unittest.TestCase):
 
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def test_shutdown_on_null_message(self, quantum):
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def test_shutdown_on_null_message(self, neutron):
         self.w = worker.Worker(0, mock.Mock())
         with mock.patch.object(self.w, '_shutdown') as meth:
             self.w.handle_message(None, None)
             meth.assert_called_once_with()
 
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def test_stop_threads(self, quantum):
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def test_stop_threads(self, neutron):
         self.w = worker.Worker(1, mock.Mock())
         original_queue = self.w.work_queue
         self.assertTrue(self.w._keep_going)
@@ -95,9 +95,9 @@ class TestWorkerShutdown(unittest.TestCase):
     @mock.patch('kombu.connection.BrokerConnection')
     @mock.patch('kombu.entity.Exchange')
     @mock.patch('kombu.Producer')
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def test_stop_threads_notifier(self, quantum, producer, exchange, broker):
-        notifier = notifications.Publisher('url', 'quantum', 'topic')
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def test_stop_threads_notifier(self, neutron, producer, exchange, broker):
+        notifier = notifications.Publisher('url', 'neutron', 'topic')
         self.w = worker.Worker(0, notifier)
         self.assertTrue(self.w.notifier._t)
         self.w._shutdown()
@@ -106,8 +106,8 @@ class TestWorkerShutdown(unittest.TestCase):
 
 class TestWorkerUpdateStateMachine(unittest.TestCase):
 
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def test(self, quantum):
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def test(self, neutron):
         w = worker.Worker(0, mock.Mock())
         tenant_id = '1234'
         router_id = '5678'

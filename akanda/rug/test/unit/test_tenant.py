@@ -7,8 +7,8 @@ from akanda.rug import tenant
 
 class TestTenantRouterManager(unittest.TestCase):
 
-    @mock.patch('akanda.rug.api.quantum.Quantum')
-    def setUp(self, quantum_client):
+    @mock.patch('akanda.rug.api.neutron.Neutron')
+    def setUp(self, neutron_client):
         super(TestTenantRouterManager, self).setUp()
 
         self.vm_mgr = mock.patch('akanda.rug.vm_manager.VmManager').start()
@@ -23,7 +23,7 @@ class TestTenantRouterManager(unittest.TestCase):
         # errors instantiating the client without enough config
         # settings, but we have to attach to the mock instance created
         # when we set the return value for get_router_for_tenant().
-        client = self.trm.quantum
+        client = self.trm.neutron
         self.default_router = mock.MagicMock(name='default_router')
         self.default_router.configure_mock(id='9ABC')
         client.get_router_for_tenant.return_value = self.default_router

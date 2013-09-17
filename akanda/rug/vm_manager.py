@@ -5,7 +5,7 @@ from oslo.config import cfg
 
 from akanda.rug.api import configuration
 from akanda.rug.api import nova
-from akanda.rug.api import quantum
+from akanda.rug.api import neutron
 from akanda.rug.api import akanda_client as router_api
 
 DOWN = 'down'
@@ -25,7 +25,7 @@ class VmManager(object):
         self.state = DOWN
         self._logical_router = None
 
-        self.quantum = quantum.Quantum(cfg.CONF)
+        self.neutron = neutron.Neutron(cfg.CONF)
 
     def update_state(self, silent=False):
         self._ensure_cache()
@@ -52,7 +52,7 @@ class VmManager(object):
         return self.state
 
     def boot(self):
-        self._logical_router = self.quantum.get_router_detail(router_id)
+        self._logical_router = self.neutron.get_router_detail(router_id)
 
         self.log.info('Booting router')
         nova_client = nova.Nova(cfg.CONF)
@@ -78,7 +78,7 @@ class VmManager(object):
         self.log.debug('Begin router config')
         self.state = UP
 
-        self._logical_router = self.quantum.get_router_detail(router_id)
+        self._logical_router = self.neutron.get_router_detail(router_id)
 
         addr = _get_management_address(self._logical_router)
 
@@ -92,7 +92,7 @@ class VmManager(object):
             return
 
         config = configuration.build_config(
-            self.quantum,
+            self.neutron,
             self._logical_router,
             interfaces
         )
@@ -115,7 +115,7 @@ class VmManager(object):
     def _ensure_cache(self):
         if self._logical_router:
             return
-        self._logical_router = self.quantum.get_router_detail(router_id)
+        self._logical_router = self.neutron.get_router_detail(router_id)
 
     def _verify_interfaces(self, logical_config, interfaces):
         router_macs = set((iface['lladdr'] for iface in interfaces))
