@@ -11,7 +11,7 @@ setup(
     install_requires=[
         'netaddr>=0.7.5',
         'httplib2>=0.7.2',
-        'python-quantumclient>=2.1',
+        'python-neutronclient>=2.3.0,<3',
         'oslo.config',
         'kombu>=2.4.8'
     ],

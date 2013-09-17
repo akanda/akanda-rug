@@ -7,7 +7,7 @@ from oslo.config import cfg
 
 from akanda.rug.api import configuration
 from akanda.rug.api import nova
-from akanda.rug.api import quantum
+from akanda.rug.api import neutron
 from akanda.rug.api import akanda_client as router_api
 from akanda.rug.common import cache
 from akanda.rug.common import notification
@@ -43,10 +43,10 @@ OPTIONS = [
     cfg.BoolOpt('ovs_use_veth', default=False),
     cfg.IntOpt('network_device_mtu'),
 
-    # listen for Quantum notification events
+    # listen for Neutron notification events
     cfg.StrOpt('notification_topic',
                default='notifications.info',
-               help='Quantum notification topic name')
+               help='Neutron notification topic name')
 ]
 
 AGENT_OPTIONS = [
@@ -85,14 +85,14 @@ class AkandaL3Manager(notification.NotificationMixin,
                       periodic_task.PeriodicTasks):
     def __init__(self):
         self.cache = cache.RouterCache()
-        self.quantum = quantum.Quantum(cfg.CONF)
+        self.neutron = neutron.Neutron(cfg.CONF)
         self.nova = nova.Nova(cfg.CONF)
         self.task_mgr = task.TaskManager()
         wait_for_callable(
-            self.quantum.ensure_local_service_port,
+            self.neutron.ensure_local_service_port,
             error_msg='Could not ensure local service port',
             ignorable_exceptions=(
-                quantum.client.exceptions.QuantumClientException,
+                neutron.client.exceptions.NeutronClientException,
             ),
         )
 
@@ -103,7 +103,7 @@ class AkandaL3Manager(notification.NotificationMixin,
             cfg.CONF.notification_topic,
             cfg.CONF.control_exchange)
         self.metadata = metadata.create_metadata_signing_proxy(
-            quantum.get_local_service_ip(cfg.CONF).split('/')[0]
+            neutron.get_local_service_ip(cfg.CONF).split('/')[0]
         )
 
     @periodic_task.periodic_task
@@ -155,7 +155,7 @@ class AkandaL3Manager(notification.NotificationMixin,
     def handle_router_subnet_change(self, tenant_id, payload):
         rtr = self.cache.get_by_tenant_id(tenant_id)
         if not rtr:
-            rtr = self.quantum.get_router_for_tenant(tenant_id)
+            rtr = self.neutron.get_router_for_tenant(tenant_id)
 
         if rtr:
             self.task_mgr.put(self.update_router, rtr.id,
@@ -173,7 +173,7 @@ class AkandaL3Manager(notification.NotificationMixin,
                           reason='Router delete notification received')
 
     def routers_updated(self, context, routers):
-        """Method for Quantum L3 Agent API"""
+        """Method for Neutron L3 Agent API"""
         for r in routers:
             self.task_mgr.put(self.update_router, r['id'])
 
@@ -185,17 +185,17 @@ class AkandaL3Manager(notification.NotificationMixin,
     def sync_state(self, reason_msg='janitor periodic task'):
         """Load state from database and update routers that have changed."""
         # pull all known routers
-        quantum_routers = wait_for_callable(
-            self.quantum.get_routers,
-            error_msg='Could not fetch routers from quantum',
+        neutron_routers = wait_for_callable(
+            self.neutron.get_routers,
+            error_msg='Could not fetch routers from neutron',
             ignorable_exceptions=(
-                quantum.client.exceptions.QuantumClientException,
+                neutron.client.exceptions.NeutronClientException,
             ),
         )
         known_routers = set(self.cache.keys())
         active_routers = set()
 
-        for rtr in quantum_routers:
+        for rtr in neutron_routers:
             active_routers.add(rtr.id)
 
             if self.cache.get(rtr.id) != rtr:
@@ -215,7 +215,7 @@ class AkandaL3Manager(notification.NotificationMixin,
     def update_router(self, router_id):
         LOG.info('Updating router: %s' % router_id)
 
-        rtr = self.quantum.get_router_detail(router_id)
+        rtr = self.neutron.get_router_detail(router_id)
         self.ensure_provider_ports(rtr)
 
         if self.router_is_alive(rtr) and self.verify_router_interfaces(rtr):
@@ -255,7 +255,7 @@ class AkandaL3Manager(notification.NotificationMixin,
             cfg.CONF.akanda_mgt_service_port,
         )
 
-        config = configuration.build_config(self.quantum, router, interfaces)
+        config = configuration.build_config(self.neutron, router, interfaces)
 
         for i in xrange(MAGIC_MAX_RETRIES):
             try:
@@ -340,11 +340,11 @@ class AkandaL3Manager(notification.NotificationMixin,
 
     def ensure_provider_ports(self, router):
         if router.management_port is None:
-            mgt_port = self.quantum.create_router_management_port(router.id)
+            mgt_port = self.neutron.create_router_management_port(router.id)
             router.management_port = mgt_port
 
         if router.external_port is None:
-            ext_port = self.quantum.create_router_external_port(router)
+            ext_port = self.neutron.create_router_external_port(router)
             router.external_port = ext_port
 
         return router

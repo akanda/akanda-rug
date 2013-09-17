@@ -13,7 +13,7 @@ from akanda.rug import notifications
 from akanda.rug import scheduler
 from akanda.rug import populate
 from akanda.rug import worker
-from akanda.rug.api import quantum as quantum_api
+from akanda.rug.api import neutron as neutron_api
 
 LOG = logging.getLogger(__name__)
 
@@ -90,10 +90,10 @@ def main(argv=sys.argv[1:]):
                    default='amqp://guest:secrete@localhost:5672/',
                    help='connection for AMQP server'),
         cfg.StrOpt('incoming-notifications-exchange',
-                   default='quantum',
+                   default='neutron',
                    help='name of the exchange where we receive notifications'),
         cfg.StrOpt('outgoing-notifications-exchange',
-                   default='quantum',
+                   default='neutron',
                    help='name of the exchange where we send notifications'),
         cfg.StrOpt('rpc-exchange',
                    default='l3_agent_fanout',
@@ -112,11 +112,11 @@ def main(argv=sys.argv[1:]):
     )
 
     # Purge the mgt tap interface on startup
-    quantum = quantum_api.Quantum(cfg.CONF)
-    quantum.purge_management_interface()
+    neutron = neutron_api.Neutron(cfg.CONF)
+    neutron.purge_management_interface()
 
     # bring the mgt tap interface up
-    quantum.ensure_local_service_port()
+    neutron.ensure_local_service_port()
 
     # Set up the queue to move messages between the eventlet-based
     # listening process and the scheduler.
@@ -181,6 +181,6 @@ def main(argv=sys.argv[1:]):
     notification_proc.terminate()
 
     # Purge the mgt tap interface
-    quantum.purge_management_interface()
+    neutron.purge_management_interface()
 
     LOG.info('exiting')

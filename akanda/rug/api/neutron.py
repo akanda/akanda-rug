@@ -4,7 +4,7 @@ import uuid
 
 import netaddr
 from oslo.config import cfg
-from quantumclient.v2_0 import client
+from neutronclient.v2_0 import client
 
 from akanda.rug.common.exceptions import AbortTask
 from akanda.rug.common.linux import ip_lib
@@ -15,7 +15,7 @@ from akanda.rug.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
-# copied from Quantum source
+# copied from Neutron source
 DEVICE_OWNER_ROUTER_MGT = "network:router_management"
 DEVICE_OWNER_ROUTER_INT = "network:router_interface"
 DEVICE_OWNER_ROUTER_GW = "network:router_gateway"
@@ -314,7 +314,7 @@ class L3PluginApi(proxy.RpcProxy):
         return retval
 
 
-class Quantum(object):
+class Neutron(object):
     def __init__(self, conf):
         self.conf = conf
         self.api_client = AkandaExtClientWrapper(
