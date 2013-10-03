@@ -53,6 +53,7 @@ class VmManager(object):
 
     def boot(self):
         self._logical_router = self.quantum.get_router_detail(self.router_id)
+        self._ensure_provider_ports(self._logical_router)
 
         self.log.info('Booting router')
         nova_client = nova.Nova(cfg.CONF)
@@ -129,6 +130,13 @@ class VmManager(object):
         self.log.debug('MACs expected: %s', ', '.join(sorted(expected_macs)))
 
         return router_macs == expected_macs
+
+    def _ensure_provider_ports(self, router):
+        if router.management_port is None:
+            router.management_port = self.quantum.create_router_management_port(router.id)
+
+        if router.external_port is None:
+            router.external_port = self.quantum.create_router_external_port(router)
 
 
 def _get_management_address(router):
