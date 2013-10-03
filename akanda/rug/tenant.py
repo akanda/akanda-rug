@@ -61,6 +61,11 @@ class TenantRouterManager(object):
             if self._default_router_id is None:
                 LOG.debug('looking up router for tenant %s', message.tenant_id)
                 router = self.quantum.get_router_for_tenant(message.tenant_id)
+                # Not all network related events need router managemant,
+                # in some cases there could be not router to manage.
+                # e.g. a port created on the mgt or external networks
+                if not router:
+                    return []
                 self._default_router_id = router.id
             router_id = self._default_router_id
 
