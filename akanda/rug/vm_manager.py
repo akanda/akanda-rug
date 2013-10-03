@@ -30,7 +30,7 @@ class VmManager(object):
     def update_state(self, silent=False):
         self._ensure_cache()
 
-        addr = _get_management_address(self.router_id)
+        addr = _get_management_address(self.logical_router)
         for i in xrange(MAX_RETRIES):
             try:
                 if router_api.is_alive(addr, cfg.CONF.akanda_mgt_service_port):
