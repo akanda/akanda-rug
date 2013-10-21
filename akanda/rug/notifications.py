@@ -66,6 +66,17 @@ def _make_event_from_message(message):
             crud = event.DELETE
         elif event_type in _INTERESTING_NOTIFICATIONS:
             crud = event.UPDATE
+        # After that a router has been created in an user's tenant, the rug
+        # get a notification for that router in the service tenant with
+        # event_type router.update.end. This causes the tenant router manager
+        # for the service tenant to create an Automaton for that router.
+        # To avoid that we just ignore notification whose tenant_id differ from
+        # the tenant_id the router has been created in.
+        elif event_type == 'router.update.end':
+            router_tenant_id = message.get('payload', {}).get(
+                'router', {}).get('tenant_id')
+            if router_tenant_id and router_tenant_id != tenant_id:
+                return None
         elif event_type.endswith('.end'):
             crud = event.UPDATE
         elif event_type.startswith('akanda.'):

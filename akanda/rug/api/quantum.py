@@ -339,7 +339,7 @@ class Quantum(object):
         try:
             return Router.from_dict(router[0])
         except IndexError:
-            raise AbortTask('the router is no longer available')
+            raise AbortTask('the router with id:%s is no longer available' % router_id)
 
     def get_router_for_tenant(self, tenant_id):
         response = self.api_client.list_routers(tenant_id=tenant_id)
