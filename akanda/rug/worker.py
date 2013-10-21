@@ -52,7 +52,8 @@ class Worker(object):
                 continue
             if not sm:
                 break
-            LOG.debug('updating %s', sm.router_id)
+            LOG.debug('updating %s with id %s with state: %s',
+                      sm.router_id, sm, sm.state)
             try:
                 sm.update()
             except:
@@ -144,6 +145,12 @@ class Worker(object):
             'Number of tenant router managers managed: %d',
             len(self.tenant_managers)
         )
+        for tenant_id, trm in self.tenant_managers.items():
+            LOG.debug('Tenant Router Manager %s for tenant: %s',
+                      trm, tenant_id)
+            for sm in trm.state_machines.values():
+                LOG.debug('State machine: %s manages router: %s',
+                          sm, sm.router_id)
         for thread in self.threads:
             LOG.debug(
                 'Thread %s is %s',
