@@ -66,7 +66,7 @@ def _make_event_from_message(message):
             crud = event.DELETE
         elif event_type in _INTERESTING_NOTIFICATIONS:
             crud = event.UPDATE
-        # After that a router has been created in an user's tenant, the rug
+        # After that a router has been created in a user tenant, the rug
         # get a notification for that router in the service tenant with
         # event_type router.update.end. This causes the tenant router manager
         # for the service tenant to create an Automaton for that router.
