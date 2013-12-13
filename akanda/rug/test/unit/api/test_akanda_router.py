@@ -40,15 +40,6 @@ class TestAkandaClient(unittest.TestCase):
             timeout=1.0
         )
 
-    def test_is_alive_exception(self):
-        self.mock_get.side_effect = Exception
-
-        self.assertFalse(akanda_client.is_alive('fe80::2', 5000))
-        self.mock_get.assert_called_once_with(
-            'http://[fe80::2]:5000/v1/firewall/labels',
-            timeout=1.0
-        )
-
     def test_get_interfaces(self):
         self.mock_get.return_value.status_code = 200
         self.mock_get.return_value.json.return_value = {
