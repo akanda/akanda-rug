@@ -55,6 +55,7 @@ def register_and_load_opts(argv):
     # that are chatty
     cfg.set_defaults(log.log_opts,
                      default_log_levels=['amqplib=WARN',
+                                         'amqp=WARN',
                                          'qpid.messaging=INFO',
                                          'sqlalchemy=WARN',
                                          'keystoneclient=INFO',

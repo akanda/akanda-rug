@@ -182,7 +182,7 @@ def listen(host_id, amqp_url,
             event = _make_event_from_message(body)
             if not event:
                 return
-            LOG.debug('received message for %s', event.tenant_id)
+            LOG.debug('received message for tenant %s', event.tenant_id)
             notification_queue.put((event.tenant_id, event))
         except:
             LOG.exception('could not process message: %s' % unicode(body))
