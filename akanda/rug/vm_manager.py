@@ -29,6 +29,8 @@ class VmManager(object):
 
         if self.router_obj.management_port is None:
             self.state = DOWN
+            if not silent:
+                self.log.debug('No management port, router cannot be up')
             return self.state
 
         addr = _get_management_address(self.router_obj)
@@ -134,13 +136,19 @@ class VmManager(object):
                     cfg.CONF.akanda_mgt_service_port,
                     config
                 )
-            except Exception:
+            except Exception as e:
                 if i == cfg.CONF.max_retries - 1:
                     # Only log the traceback if we encounter it many times.
                     self.log.exception('failed to update config')
                 else:
-                    self.log.debug('failed to update config')
-                time.sleep(cfg.CONF.retry_delay)
+                    self.log.debug('attempt %s failed to update config: %s', (i, e))
+                    self.log.debug(
+                        'waiting %s before trying again', 
+                        cfg.CONF.retry_delay,
+                    )
+                    # FIXME(dhellmann): Why does this sleep appear to
+                    # block indefinitely?
+                    time.sleep(cfg.CONF.retry_delay)
             else:
                 self.state = CONFIGURED
                 self.log.info('Router config updated')
