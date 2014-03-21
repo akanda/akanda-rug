@@ -12,7 +12,7 @@ class Nova(object):
             auth_system=conf.auth_strategy,
             region_name=conf.auth_region)
 
-    def create_router_instance(self, router):
+    def create_router_instance(self, router, **kwargs):
         nics = [{'net-id': p.network_id, 'v4-fixed-ip': '', 'port-id': p.id}
                 for p in router.ports]
 
@@ -27,7 +27,8 @@ class Nova(object):
             'ak-' + router.id,
             image=self.conf.router_image_uuid,
             flavor=self.conf.router_instance_flavor,
-            nics=nics)
+            nics=nics,
+            **kwargs)
 
     def get_instance(self, router):
         instances = self.client.servers.list(
@@ -50,12 +51,20 @@ class Nova(object):
         if instance:
             self.client.servers.delete(instance.id)
 
-    def reboot_router_instance(self, router):
+    def reboot_router_instance(self, router, **kwargs):
         instance = self.get_instance(router)
         if instance:
             if 'BUILD' in instance.status:
                 return
 
+            # When rebooting a router instance and reusing the ports, use the
+            # same hypervisor as before.  Doing otherwise tends to make NVP
+            # upset.
+            kwargs['availability_zone'] = '%s:%s' % (
+                getattr(instance, 'OS-EXT-AZ:availability_zone'),
+                getattr(instance, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
+            )
+
             self.client.servers.delete(instance.id)
 
-        self.create_router_instance(router)
+        self.create_router_instance(router, **kwargs)
