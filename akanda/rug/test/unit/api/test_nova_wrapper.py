@@ -139,11 +139,23 @@ class TestNovaWrapper(unittest.TestCase):
         with mock.patch.object(self.nova, 'get_instance') as get_instance:
             get_instance.return_value.id = 'instance_id'
             get_instance.return_value.status = 'ACTIVE'
+            setattr(
+                get_instance.return_value,
+                'OS-EXT-AZ:availability_zone',
+                'zone1'
+            )
+            setattr(
+                get_instance.return_value,
+                'OS-EXT-SRV-ATTR:hypervisor_hostname',
+                'hypervisor1'
+            )
+            get_instance.return_value.status = 'ACTIVE'
 
             expected = [
                 mock.call.servers.delete('instance_id'),
                 mock.call.servers.create(mock.ANY, nics=mock.ANY,
-                                         flavor=1, image=mock.ANY)
+                                         flavor=1, image=mock.ANY,
+                                         availability_zone='zone1:hypervisor1')
             ]
 
             self.nova.reboot_router_instance(fake_router)
