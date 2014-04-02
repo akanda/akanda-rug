@@ -6,12 +6,14 @@ from oslo.config import cfg
 
 from akanda.rug.api import configuration
 from akanda.rug.api import akanda_client as router_api
+from akanda.rug.api import quantum
 
 DOWN = 'down'
 BOOTING = 'booting'
 UP = 'up'
 CONFIGURED = 'configured'
 RESTART = 'restart'
+DELETING = 'deleting'
 
 
 class VmManager(object):
@@ -26,7 +28,13 @@ class VmManager(object):
         self.update_state(worker_context, silent=True)
 
     def update_state(self, worker_context, silent=False):
-        self._ensure_cache(worker_context)
+        try:
+            self._ensure_cache(worker_context)
+        except quantum.RouterGone:
+            # The router has been deleted, set our state accordingly
+            # and return without doing any more work.
+            self.state = DELETING
+            return self.state
 
         if self.router_obj.management_port is None:
             self.state = DOWN
@@ -105,15 +113,28 @@ class VmManager(object):
         return False
 
     def stop(self, worker_context):
-        self._ensure_cache(worker_context)
-        self.log.info('Destroying router')
+        try:
+            self._ensure_cache(worker_context)
+            router_obj = self.router_obj
+            self.log.info('Destroying router')
+        except quantum.RouterGone:
+            # We are being told to delete a router that neutron has
+            # already removed. Make a fake router object to use in
+            # this method.
+            router_obj = quantum.Router(
+                id_=self.router_id,
+                tenant_id=self.tenant_id,
+                name='unnamed',
+                admin_state_up=False,
+            )
+            self.log.info('Destroying router neutron has deleted')
 
         nova_client = worker_context.nova_client
-        nova_client.destroy_router_instance(self.router_obj)
+        nova_client.destroy_router_instance(router_obj)
 
         start = time.time()
         while time.time() - start < cfg.CONF.boot_timeout:
-            if not nova_client.get_router_instance_status(self.router_obj):
+            if not nova_client.get_router_instance_status(router_obj):
                 self.state = DOWN
                 return
             self.log.debug('Router has not finished stopping')
