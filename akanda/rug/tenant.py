@@ -107,16 +107,21 @@ class TenantRouterManager(object):
                 self._default_router_id = router.id
             router_id = self._default_router_id
 
-        elif router_id == '*':
-            # All of our routers
-            return list(self.state_machines.values())
-
         # Ignore messages to deleted routers.
         if self.state_machines.has_been_deleted(router_id):
+            LOG.debug('dropping message for deleted router')
             return []
 
-        # An individual router by its id.
-        if router_id not in self.state_machines:
+        state_machines = []
+
+        # Send to all of our routers.
+        if router_id == '*':
+            LOG.debug('routing to all state machines')
+            state_machines = self.state_machines.values()
+
+        # Create a new state machine for this router.
+        elif router_id not in self.state_machines:
+            LOG.debug('creating state machine for %s', router_id)
             def deleter():
                 self._delete_router(router_id)
             sm = state.Automaton(
@@ -127,5 +132,17 @@ class TenantRouterManager(object):
                 worker_context=worker_context,
             )
             self.state_machines[router_id] = sm
-        sm = self.state_machines[router_id]
-        return [sm]
+
+        # Send directly to an existing router.
+        elif router_id:
+            sm = self.state_machines[router_id]
+            state_machines = [sm]
+
+        # Filter out any deleted state machines.
+        return [
+            sm
+            for sm in state_machines
+            if (not sm.deleted
+                and
+                not self.state_machines.has_been_deleted(sm.router_id))
+        ]

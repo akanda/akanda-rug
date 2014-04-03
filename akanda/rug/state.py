@@ -76,7 +76,9 @@ class CalcAction(State):
         return action
 
     def transition(self, action, vm, worker_context):
-        if action == DELETE:
+        if vm.state == vm_manager.GONE:
+            return StopVM(self.log)
+        elif action == DELETE:
             return StopVM(self.log)
         elif vm.state == vm_manager.BOOTING:
             return CheckBoot(self.log)
@@ -121,6 +123,8 @@ class CreateVM(State):
         return action
 
     def transition(self, action, vm, worker_context):
+        if vm.state == vm_manager.GONE:
+            return StopVM(self.log)
         return CheckBoot(self.log)
 
 
@@ -130,14 +134,16 @@ class CheckBoot(State):
         # Put the action back on the front of the queue so that we can yield
         # and handle it in another state machine traversal (which will proceed
         # from CalcAction directly to CheckBoot).
-        queue.appendleft(action)
+        if vm.state != vm_manager.GONE:
+            queue.appendleft(action)
         return action
 
     def transition(self, action, vm, worker_context):
+        if vm.state == vm_manager.GONE:
+            return StopVM(self.log)
         if vm.state == vm_manager.UP:
             return ConfigureVM(self.log)
-        else:
-            return CalcAction(self.log)
+        return CalcAction(self.log)
 
 
 class StopVM(State):
@@ -146,12 +152,13 @@ class StopVM(State):
         return action
 
     def transition(self, action, vm, worker_context):
-        if vm.state != vm_manager.DOWN:
+        if vm.state not in (vm_manager.DOWN, vm_manager.GONE):
             return self
+        if vm.state == vm_manager.GONE:
+            return Exit(self.log)
         if action == DELETE:
             return Exit(self.log)
-        else:
-            return CreateVM(self.log)
+        return CreateVM(self.log)
 
 
 class Exit(State):
@@ -170,7 +177,7 @@ class ConfigureVM(State):
             return action
 
     def transition(self, action, vm, worker_context):
-        if vm.state in (vm_manager.RESTART, vm_manager.DOWN):
+        if vm.state in (vm_manager.RESTART, vm_manager.DOWN, vm_manager.GONE):
             return StopVM(self.log)
         if vm.state == vm_manager.UP:
             return PushUpdate(self.log)
@@ -213,6 +220,7 @@ class Automaton(object):
         self.router_id = router_id
         self.tenant_id = tenant_id
         self._delete_callback = delete_callback
+        self.deleted = False
         self.bandwidth_callback = bandwidth_callback
         self._queue = collections.deque()
         self.log = logging.getLogger(__name__ + '.' + router_id)
@@ -221,12 +229,6 @@ class Automaton(object):
         self.action = POLL
         self.vm = vm_manager.VmManager(router_id, tenant_id, self.log,
                                        worker_context)
-
-    @property
-    def _deleting(self):
-        """Boolean property indicating whether this state machine is stopping.
-        """
-        return isinstance(self.state, Exit)
 
     def service_shutdown(self):
         "Called when the parent process is being stopped"
@@ -237,16 +239,17 @@ class Automaton(object):
             self._delete_callback()
             # Avoid calling the delete callback more than once.
             self._delete_callback = None
+            # Remember that this router has been deleted
+            self.deleted = True
 
     def update(self, worker_context):
         "Called when the router config should be changed"
         while self._queue:
             while True:
-                if self._deleting:
+                if self.deleted:
                     self.log.debug(
                         'skipping update because the router is being deleted'
                     )
-                    self._do_delete()
                     return
 
                 try:
@@ -255,7 +258,8 @@ class Automaton(object):
                     if isinstance(self.state, ReadStats):
                         additional_args = (self.bandwidth_callback,)
 
-                    self.log.debug('%s.execute(%s)', self.state, self.action)
+                    self.log.debug('%s.execute(%s) vm.state=%s',
+                                   self.state, self.action, self.vm.state)
                     self.action = self.state.execute(
                         self.action,
                         self.vm,
@@ -277,25 +281,40 @@ class Automaton(object):
                     self.vm,
                     worker_context,
                 )
-                self.log.debug('%s.transition -> %s', old_state, self.state)
+                self.log.debug('%s.transition(%s) -> %s vm.state=%s',
+                               old_state, self.action, self.state,
+                               self.vm.state)
 
+                # If the router is gone, mark ourselves as deleted.
+                if self.vm.state == vm_manager.GONE:
+                    self.deleted = True
+
+                # Yield control each time we stop to figure out what
+                # to do next.
                 if isinstance(self.state, CalcAction):
                     return  # yield
 
+                # We have reached the exit state, so the router has
+                # been deleted somehow.
+                if isinstance(self.state, Exit):
+                    self._do_delete()
+                    return
+
     def send_message(self, message):
         "Called when the worker put a message in the state machine queue"
-        if self._deleting:
+        if self.deleted:
             # Ignore any more incoming messages
             self.log.debug(
-                'deleting state machine, ignoring incoming message %s',
+                'deleted state machine, ignoring incoming message %s',
                 message)
-            return
+            return False
         self._queue.append(message.crud)
         self.log.debug(
             'incoming message brings queue length to %s',
             len(self._queue),
         )
+        return True
 
     def has_more_work(self):
         "Called to check if there are more messages in the state machine queue"
-        return (not self._deleting) and bool(self._queue)
+        return (not self.deleted) and bool(self._queue)

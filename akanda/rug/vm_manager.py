@@ -30,6 +30,7 @@ class VmManager(object):
     def update_state(self, worker_context, silent=False):
         self._ensure_cache(worker_context)
         if self.state == GONE:
+            self.log.debug('not updating state of deleted router')
             return self.state
 
         if self.router_obj.management_port is None:
@@ -46,7 +47,7 @@ class VmManager(object):
                 self.log.debug(
                     'Alive check failed. Attempt %d of %d',
                     i,
-                    cfg.CONF.max_retries
+                    cfg.CONF.max_retries,
                 )
             time.sleep(cfg.CONF.retry_delay)
         else:
@@ -68,11 +69,10 @@ class VmManager(object):
         return self.state
 
     def boot(self, worker_context):
-        # FIXME: Modify _ensure_cache() so we can call it with a force
-        # flag instead of bypassing it.
-        self.router_obj = worker_context.neutron.get_router_detail(
-            self.router_id
-        )
+        self._ensure_cache(worker_context)
+        if self.state == GONE:
+            self.log.info('not booting deleted router')
+            return
 
         self.log.info('Booting router')
         self.state = DOWN
@@ -149,9 +149,9 @@ class VmManager(object):
         # *router* is broken, but does mean we can't update it.
         # Change the exception to something the caller can catch
         # safely.
-        self.router_obj = worker_context.neutron.get_router_detail(
-            self.router_id
-        )
+        self._ensure_cache(worker_context)
+        if self.state == GONE:
+            return
 
         addr = _get_management_address(self.router_obj)
 
@@ -205,8 +205,6 @@ class VmManager(object):
             self.state = failure_state
 
     def _ensure_cache(self, worker_context):
-        if self.router_obj:
-            return
         try:
             self.router_obj = worker_context.neutron.get_router_detail(
                 self.router_id
