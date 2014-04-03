@@ -6,28 +6,29 @@ digraph rug {
   START -> CALC_ACTION [ label = "vm>D,ACT>P" ];
 
   CALC_ACTION -> ALIVE [ label = "ACT>[CRUP],vm:[UC]" ];
-  CALC_ACTION -> EXIT [ label = "ACT>D,vm:D" ];
   CALC_ACTION -> STOP [ label = "ACT>D" ];
-  CALC_ACTION -> CREATEVM [ label = "ACT>[CRUP],vm:D" ];
+  CALC_ACTION -> CREATE_VM [ label = "ACT>[CRUP],vm:D" ];
   CALC_ACTION -> CHECKBOOT [ label = "ACT>[CRUP],vm:B" ];
 
-  ALIVE -> CREATEVM [ label = "vm>D" ];
+  ALIVE -> CREATE_VM [ label = "vm>D" ];
   ALIVE -> CONFIG [ label = "ACT:[CU],vm:[UC]" ];
   ALIVE -> STATS [ label = "ACT:R,vm:C" ];
   ALIVE -> CALC_ACTION [ label = "ACT:P,vm>[UC]" ];
+  ALIVE -> STOP_VM [ label = "vm:G" ];
 
-  CREATEVM -> CHECKBOOT [ label = "ACT:[CRUDP],vm:[DBUCR]" ];
+  CREATE_VM -> CHECKBOOT [ label = "ACT:[CRUDP],vm:[DBUCR]" ];
 
   CHECKBOOT -> CONFIG [ label = "vm>U" ]
   CHECKBOOT -> CALC_ACTION [ label = "vm:[DBCR]" ]
 
-  CONFIG -> STOP [ label = "vm>[RD]" ];
+  CONFIG -> STOP_VM [ label = "vm>[RD]" ];
   CONFIG -> STATS [ label = "ACT:R,vm>C" ];
   CONFIG -> CALC_ACTION [ label = "ACT>P,vm>C" ];
 
   STATS -> CALC_ACTION [ label = "ACT>P" ];
 
-  STOP -> EXIT [ label = "ACT:D,vm>D" ];
-  STOP -> CREATEVM [ label = "vm>D" ];
+  STOP_VM -> EXIT [ label = "ACT:D,vm>D" ];
+  STOP_VM -> CREATE_VM [ label = "vm>D" ];
+  STOP_VM -> STOP_VM [ label = "vm!=D" ];
 
 }
