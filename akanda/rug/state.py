@@ -77,10 +77,7 @@ class CalcAction(State):
 
     def transition(self, action, vm, worker_context):
         if action == DELETE:
-            if vm.state == vm_manager.DOWN:
-                return Exit(self.log)
-            else:
-                return StopVM(self.log)
+            return StopVM(self.log)
         elif vm.state == vm_manager.BOOTING:
             return CheckBoot(self.log)
         elif vm.state == vm_manager.DOWN:
