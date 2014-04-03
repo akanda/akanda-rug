@@ -13,7 +13,7 @@ BOOTING = 'booting'
 UP = 'up'
 CONFIGURED = 'configured'
 RESTART = 'restart'
-DELETING = 'deleting'
+GONE = 'gone'
 
 
 class VmManager(object):
@@ -28,12 +28,8 @@ class VmManager(object):
         self.update_state(worker_context, silent=True)
 
     def update_state(self, worker_context, silent=False):
-        try:
-            self._ensure_cache(worker_context)
-        except quantum.RouterGone:
-            # The router has been deleted, set our state accordingly
-            # and return without doing any more work.
-            self.state = DELETING
+        self._ensure_cache(worker_context)
+        if self.state == GONE:
             return self.state
 
         if self.router_obj.management_port is None:
@@ -113,11 +109,8 @@ class VmManager(object):
         return False
 
     def stop(self, worker_context):
-        try:
-            self._ensure_cache(worker_context)
-            router_obj = self.router_obj
-            self.log.info('Destroying router')
-        except quantum.RouterGone:
+        self._ensure_cache(worker_context)
+        if self.state == GONE:
             # We are being told to delete a router that neutron has
             # already removed. Make a fake router object to use in
             # this method.
@@ -128,6 +121,9 @@ class VmManager(object):
                 admin_state_up=False,
             )
             self.log.info('Destroying router neutron has deleted')
+        else:
+            router_obj = self.router_obj
+            self.log.info('Destroying router')
 
         nova_client = worker_context.nova_client
         nova_client.destroy_router_instance(router_obj)
@@ -211,9 +207,15 @@ class VmManager(object):
     def _ensure_cache(self, worker_context):
         if self.router_obj:
             return
-        self.router_obj = worker_context.neutron.get_router_detail(
-            self.router_id
-        )
+        try:
+            self.router_obj = worker_context.neutron.get_router_detail(
+                self.router_id
+            )
+        except quantum.RouterGone:
+            # The router has been deleted, set our state accordingly
+            # and return without doing any more work.
+            self.state = GONE
+            self.router_obj = None
 
     def _verify_interfaces(self, logical_config, interfaces):
         router_macs = set((iface['lladdr'] for iface in interfaces))

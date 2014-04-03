@@ -103,7 +103,9 @@ class Alive(State):
         return action
 
     def transition(self, action, vm, worker_context):
-        if vm.state == vm_manager.DOWN:
+        if vm.state == vm_manager.GONE:
+            return StopVM(self.log)
+        elif vm.state == vm_manager.DOWN:
             return CreateVM(self.log)
         elif action == POLL and vm.state == vm_manager.CONFIGURED:
             return CalcAction(self.log)
