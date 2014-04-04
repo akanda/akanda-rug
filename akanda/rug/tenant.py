@@ -122,8 +122,10 @@ class TenantRouterManager(object):
         # Create a new state machine for this router.
         elif router_id not in self.state_machines:
             LOG.debug('creating state machine for %s', router_id)
+
             def deleter():
                 self._delete_router(router_id)
+
             sm = state.Automaton(
                 router_id=router_id,
                 tenant_id=self.tenant_id,
@@ -132,6 +134,7 @@ class TenantRouterManager(object):
                 worker_context=worker_context,
             )
             self.state_machines[router_id] = sm
+            state_machines = [sm]
 
         # Send directly to an existing router.
         elif router_id:
@@ -140,9 +143,9 @@ class TenantRouterManager(object):
 
         # Filter out any deleted state machines.
         return [
-            sm
-            for sm in state_machines
-            if (not sm.deleted
+            machine
+            for machine in state_machines
+            if (not machine.deleted
                 and
-                not self.state_machines.has_been_deleted(sm.router_id))
+                not self.state_machines.has_been_deleted(machine.router_id))
         ]

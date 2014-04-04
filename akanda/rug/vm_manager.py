@@ -34,6 +34,7 @@ class VmManager(object):
             return self.state
 
         if self.router_obj.management_port is None:
+            self.log.debug('no management port, marking router as down')
             self.state = DOWN
             return self.state
 
