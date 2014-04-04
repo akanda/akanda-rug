@@ -149,6 +149,10 @@ class CheckBoot(State):
 class StopVM(State):
     def execute(self, action, vm, worker_context, queue):
         vm.stop(worker_context)
+        if vm.state == vm_manager.GONE:
+            # Force the action to delete since the router isn't there
+            # any more.
+            return DELETE
         return action
 
     def transition(self, action, vm, worker_context):
@@ -267,7 +271,8 @@ class Automaton(object):
                         self._queue,
                         *additional_args
                     )
-                    self.log.debug('%s.execute -> %s', self.state, self.action)
+                    self.log.debug('%s.execute -> %s vm.state=%s',
+                                   self.state, self.action, self.vm.state)
                 except:
                     self.log.exception(
                         '%s.execute() failed for action: %s',
@@ -284,10 +289,6 @@ class Automaton(object):
                 self.log.debug('%s.transition(%s) -> %s vm.state=%s',
                                old_state, self.action, self.state,
                                self.vm.state)
-
-                # If the router is gone, mark ourselves as deleted.
-                if self.vm.state == vm_manager.GONE:
-                    self.deleted = True
 
                 # Yield control each time we stop to figure out what
                 # to do next.

@@ -131,7 +131,8 @@ class VmManager(object):
         start = time.time()
         while time.time() - start < cfg.CONF.boot_timeout:
             if not nova_client.get_router_instance_status(router_obj):
-                self.state = DOWN
+                if self.state != GONE:
+                    self.state = DOWN
                 return
             self.log.debug('Router has not finished stopping')
             time.sleep(cfg.CONF.retry_delay)
