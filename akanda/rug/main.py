@@ -162,7 +162,7 @@ def register_and_load_opts():
 
     # FIXME: Convert these to regular options, not command line options.
     cfg.CONF.register_cli_opts([
-        cfg.IntOpt('health-check-period',
+        cfg.IntOpt('health_check_period',
                    default=60,
                    help='seconds between health checks'),
         cfg.IntOpt('num-worker-processes',
