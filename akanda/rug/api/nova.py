@@ -46,8 +46,12 @@ class Nova(object):
         # finally cleaned up.
         LOG.debug('creating vm for router %s with image %s',
                   router.id, router_image_uuid)
+        LOG.debug('nova token id before reauth: %s',
+                  self.client.client.auth_token)
         self.client.client.unauthenticate()
         self.client.client.authenticate()
+        LOG.debug('nova token id after reauth: %s',
+                  self.client.client.auth_token)
         server = self.client.servers.create(
             'ak-' + router.id,
             image=router_image_uuid,
