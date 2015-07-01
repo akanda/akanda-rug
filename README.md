@@ -1,8 +1,10 @@
-# Akanda Rug
+This repository has been moved to the
+[stackforge akanda-rug] (http://git.openstack.org/cgit/stackforge/akanda-rug)
+repository. 
 
-*Part of the [Akanda Project](https://github.com/dreamhost/akanda).*
 
-**ties the room together**
+Go to [akanda.io] (http://akanda.io) for information on the company.
 
-The RUG is a service that manages tenant Akanda Router instances in an
-OpenStack environment.
+
+Go to [akanda] (http://github.com/stackforge/akanda) for information on the
+    projects.
